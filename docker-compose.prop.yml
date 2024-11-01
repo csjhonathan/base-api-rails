@@ -1,0 +1,57 @@
+services:
+  newrelic:
+    image: newrelic/infrastructure:latest
+    cap_add:
+      - SYS_PTRACE
+    network_mode: host
+    pid: host
+    privileged: true
+    volumes:
+      - "/:/host:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      NRIA_LICENSE_KEY: ${NRIA_LICENSE_KEY}
+  mdb:
+    image: postgres:15.4
+    volumes:
+      - ./tmp/db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+  redis:
+    image: redis:7.0-alpine
+    command: "--port ${REDIS_PORT}"
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+  web:
+    build: .
+    stdin_open: true
+    tty: true
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
+    volumes:
+      - .:/base-api-rails
+    ports:
+      - "${VIRTUAL_PORT}:3000"
+    env_file:
+      - .env
+    depends_on:
+      - mdb
+      - redis
+    environment:
+      - DOCKERIZED=true
+      - LAUNCHY_DRY_RUN=true
+      - BROWSER=/dev/null
+  nginx:
+    image: nginx
+    env_file:
+      - ./.env
+    depends_on:
+      - web
+    expose:
+      - ${VIRTUAL_PORT}
+
+networks:
+  default:
+    name: nginx-proxy
