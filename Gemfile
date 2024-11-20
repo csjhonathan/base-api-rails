@@ -36,7 +36,6 @@ gem 'active_model_serializers', '~> 0.10.0'
 # Discard Records and not Delete
 gem 'discard', '~> 1.2'
 
-
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin AJAX possible
 gem 'rack-cors'
 
